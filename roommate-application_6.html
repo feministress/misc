@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000000">
+<meta name="supported-color-schemes" content="dark">
+<meta name="color-scheme" content="only dark">
+<title>Room Application</title>
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/feministress/taillor-calendar-page/refs/heads/main/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: only dark;
+    --ink:#000000;
+    --panel:#1C1C1C;
+    --cream:#EFE9DD;
+    --cream-dim:#B9B2A4;
+    --brass:#C79A52;
+    --wine:#9A3E4F;
+    --line: rgba(239,233,221,0.16);
+    --line-strong: rgba(239,233,221,0.32);
+    --err:#E08B8B;
+  }
+  *{box-sizing:border-box; forced-color-adjust:none;}
+  html{ background:#000000 !important; color-scheme: only dark; }
+  html,body{margin:0;padding:0;}
+  body{
+    background:#000000 !important;
+    color:var(--cream) !important;
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  @media (prefers-color-scheme: light){ html, body{ background:#000000 !important; color:#EFE9DD !important; } }
+  @media (forced-colors: active){ html, body{ background:#000000 !important; color:#EFE9DD !important; forced-color-adjust:none; } }
+
+  #progress-track{ position:fixed; top:0; left:0; right:0; height:3px; background:var(--line); z-index:20; }
+  #progress-bar{ height:100%; width:0%; background:var(--brass); transition:width .35s ease; }
+
+  .topbar{
+    position:fixed; top:14px; left:20px; right:20px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'IBM Plex Mono', monospace; font-size:11px;
+    letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--cream-dim); z-index:20;
+  }
+  .topbar .brand{ color:var(--brass); }
+
+  main{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:90px 24px 130px; }
+
+  .step{ width:100%; max-width:580px; opacity:0; transform:translateY(14px); transition:opacity .4s ease, transform .4s ease; display:none; }
+  .step.active{ display:block; opacity:1; transform:translateY(0); }
+
+  .eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--wine); margin:0 0 14px; }
+  h1.q{ font-family:'Fraunces', serif; font-weight:500; font-size:clamp(22px, 4vw, 30px); line-height:1.3; margin:0 0 8px; color:var(--cream); }
+  .sub{ color:var(--cream-dim); font-size:14.5px; margin:0 0 26px; }
+
+  input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="url"], textarea{
+    width:100%; background:transparent; border:none; border-bottom:2px solid var(--line-strong);
+    color:var(--cream); font-family:'Fraunces', serif; font-size:20px; padding:10px 2px; outline:none;
+    color-scheme: only dark;
+  }
+  input:focus, textarea:focus{ border-bottom-color:var(--brass); }
+  input::placeholder, textarea::placeholder{ color:#6d6659; font-family:'Work Sans', sans-serif; font-size:15px; }
+  textarea{ resize:vertical; min-height:90px; line-height:1.5; }
+
+  .choices{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+  .mc-other-field{ display:none; margin:-2px 0 4px; }
+  .mc-other-field.show{ display:block; }
+  .mc-other-input{
+    width:100%; background:var(--panel); border:1px solid var(--line-strong); border-radius:8px;
+    color:var(--cream); font-family:'Work Sans', sans-serif; font-size:15px; padding:12px 14px; outline:none;
+  }
+  .mc-other-input:focus{ border-color:var(--brass); }
+  .choices-row{ display:flex; gap:10px; margin-top:16px; }
+  .choices-row .choice{ flex:1; justify-content:center; text-align:center; }
+  .duration-row{ display:flex; gap:20px; }
+  .duration-field{ flex:1; }
+  .choice{
+    display:flex; align-items:center; gap:12px; padding:15px 16px; border:1px solid var(--line);
+    border-radius:8px; cursor:pointer; background:var(--panel); font-size:15.5px; color:var(--cream);
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .choice:hover{ border-color:var(--brass); }
+  .choice.selected{ border-color:var(--brass); background:#332C25; }
+  .choice .key{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--cream-dim); border:1px solid var(--line-strong); border-radius:4px; padding:2px 7px; flex-shrink:0; }
+  .choice.selected .key{ color:var(--brass); border-color:var(--brass); }
+
+  .info-box{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:20px; font-size:14.5px; color:var(--cream-dim); }
+  .info-box h3{ margin:0 0 10px; font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--brass); }
+  .info-box ul{ margin:0 0 14px; padding-left:18px; }
+  .info-box li{ margin-bottom:6px; }
+
+  .agree{ display:flex; align-items:flex-start; gap:10px; margin-top:16px; font-size:14px; color:var(--cream); }
+  .agree input{ margin-top:3px; accent-color: var(--brass); width:16px; height:16px; }
+
+  .hint{ display:block; font-size:12.5px; color:var(--cream-dim); margin-top:10px; font-style:italic; }
+  .errmsg{ color:var(--err); font-size:13px; margin-top:10px; min-height:16px; }
+
+  .nav{ position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:18px 24px; background:linear-gradient(to top, var(--ink) 60%, transparent); z-index:15; }
+  .nav-inner{ max-width:580px; margin:0 auto; width:100%; display:flex; justify-content:space-between; gap:12px; }
+  button{ font-family:'IBM Plex Mono', monospace; letter-spacing:0.08em; text-transform:uppercase; font-size:12.5px; border-radius:6px; padding:13px 22px; cursor:pointer; border:1px solid transparent; }
+  #back-btn{ background:transparent; color:var(--cream-dim); border-color:var(--line-strong); }
+  #back-btn:disabled{ opacity:0; pointer-events:none; }
+  #next-btn{ background:var(--brass); color:#1B1A1E; font-weight:600; }
+  #next-btn:disabled{ opacity:0.4; cursor:default; }
+
+  #done-screen{ display:none; text-align:center; max-width:520px; }
+  #done-screen.active{ display:block; }
+  #done-screen h1{ font-family:'Fraunces', serif; font-size:28px; font-weight:500; margin-bottom:10px;}
+  #done-screen p{ color:var(--cream-dim); }
+
+  /* skip / not-applicable checkbox for profile fields */
+  .skip-row{ margin-top:14px; display:flex; align-items:center; gap:10px; font-size:14px; color:var(--cream-dim); }
+  .skip-row input{ accent-color: var(--brass); width:16px; height:16px; }
+
+  /* multi-field grid (address, pet info) */
+  .addr-grid{ display:flex; flex-direction:column; gap:14px; }
+  .field-label{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--cream-dim); margin-bottom:4px; }
+  .addr-field{
+    width:100%; background:transparent; border:none; border-bottom:2px solid var(--line-strong);
+    color:var(--cream); font-family:'Fraunces', serif; font-size:18px; padding:8px 2px; outline:none; color-scheme: only dark;
+  }
+  .addr-field:focus{ border-bottom-color:var(--brass); }
+
+  /* currency */
+  .currency-wrap{ display:flex; align-items:center; gap:6px; border-bottom:2px solid var(--line-strong); padding-bottom:2px; }
+  .currency-wrap.small{ padding-bottom:0; margin-top:10px; }
+  .currency-wrap:focus-within{ border-bottom-color:var(--brass); }
+  .currency-wrap .dollar{ font-family:'Fraunces', serif; font-size:18px; color:var(--cream-dim); }
+  .currency-wrap input{ border:none; flex:1; background:transparent; color:var(--cream); font-family:'Fraunces', serif; font-size:18px; padding:8px 2px; outline:none; }
+
+  /* location autocomplete */
+  .autocomplete-wrap{ position:relative; }
+  .ac-list{ position:absolute; left:0; right:0; top:calc(100% + 6px); background:var(--panel); border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; z-index:10; display:none; max-height:240px; overflow-y:auto; }
+  .ac-list.show{ display:block; }
+  .ac-item{ padding:12px 14px; font-size:15px; font-family:'Work Sans', sans-serif; cursor:pointer; border-bottom:1px solid var(--line); }
+  .ac-item:last-child{ border-bottom:none; }
+  .ac-item:hover, .ac-item.hl{ background:#332C25; color:var(--brass); }
+
+  /* slider */
+  .slider-readout{ font-family:'Fraunces', serif; font-size:26px; color:var(--brass); text-align:center; margin:8px 0 18px; min-height:32px; }
+  input[type="range"]{
+    width:100%; -webkit-appearance:none; appearance:none; height:4px; border-radius:2px;
+    background:var(--line-strong); outline:none; margin:10px 0;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:22px; height:22px; border-radius:50%;
+    background:var(--brass); cursor:pointer; border:3px solid #1C1C1C;
+  }
+  input[type="range"]::-moz-range-thumb{ width:22px; height:22px; border-radius:50%; background:var(--brass); cursor:pointer; border:3px solid #1C1C1C; }
+  input[type="range"]:disabled{ opacity:0.3; }
+  .slider-endlabels{ display:flex; justify-content:space-between; font-size:12px; color:var(--cream-dim); margin-top:4px; }
+  .slider-endlabels span{ max-width:45%; }
+  .invalidate-row{ margin-top:20px; display:flex; align-items:center; gap:10px; font-size:14px; color:var(--cream-dim); padding-top:16px; border-top:1px solid var(--line); }
+  .invalidate-row input{ accent-color: var(--brass); width:16px; height:16px; }
+
+  /* income multichoice */
+  .income-list{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+  .income-row{ border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--panel); }
+  .income-toggle{ border:none; border-radius:0; background:transparent; }
+  .income-toggle.selected{ background:#332C25; }
+  .income-subfields{ display:none; padding:0 16px 16px; }
+  .income-subfields.show{ display:block; }
+  .income-other-what{
+    width:100%; background:transparent; border:none; border-bottom:1px solid var(--line-strong);
+    color:var(--cream); font-family:'Work Sans', sans-serif; font-size:15px; padding:8px 2px; outline:none; margin-bottom:6px;
+  }
+
+  @media (max-width:480px){
+    h1.q{ font-size:22px; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="url"]{ font-size:18px; }
+  }
+</style>
+</head>
+<body style="background-color:#000000; color:#EFE9DD;">
+
+<datalist id="us-states">
+  <option value="AL"><option value="AK"><option value="AZ"><option value="AR"><option value="CA">
+  <option value="CO"><option value="CT"><option value="DE"><option value="FL"><option value="GA">
+  <option value="HI"><option value="ID"><option value="IL"><option value="IN"><option value="IA">
+  <option value="KS"><option value="KY"><option value="LA"><option value="ME"><option value="MD">
+  <option value="MA"><option value="MI"><option value="MN"><option value="MS"><option value="MO">
+  <option value="MT"><option value="NE"><option value="NV"><option value="NH"><option value="NJ">
+  <option value="NM"><option value="NY"><option value="NC"><option value="ND"><option value="OH">
+  <option value="OK"><option value="OR"><option value="PA"><option value="RI"><option value="SC">
+  <option value="SD"><option value="TN"><option value="TX"><option value="UT"><option value="VT">
+  <option value="VA"><option value="WA"><option value="WV"><option value="WI"><option value="WY">
+  <option value="DC">
+</datalist>
+
+<div id="progress-track"><div id="progress-bar"></div></div>
+<div class="topbar"><span class="brand">Room Application</span><span id="step-counter"></span></div>
+
+<main>
+  <div id="steps-container"></div>
+  <div id="done-screen">
+    <p class="eyebrow">Submitted</p>
+    <h1>Thanks — that's everything.</h1>
+    <p>Your application was received. I'll follow up if it's a fit.</p>
+  </div>
+</main>
+
+<div class="nav" id="nav-bar">
+  <div class="nav-inner">
+    <button id="back-btn">Back</button>
+    <button id="next-btn">Continue →</button>
+  </div>
+</div>
+
+<script>
+/* ---------- helpers ---------- */
+const isRoommate = a => ['1 roommate','2 roommates','3+ roommates'].includes(a['Living with']);
+const isAlone = a => a['Living with']==='I live alone';
+const isMovingFully = a => a['This room']==='This would be my main or only home';
+const isSecondHome = a => a['This room']==='This would be a second home';
+const isApolitical = a => a['Political - apolitical']==='Yes';
+const hasWorkIncome = a => {
+  const s = a['Income sources'] || '';
+  return ['Salaried job','Self-employed','Freelance','Business owner'].some(w => s.includes(w));
+};
+const hasSalaried = a => (a['Income sources'] || '').includes('Salaried job');
+
+function politicalLabel(v){
+  v = Number(v);
+  if (v <= 8) return 'Far left';
+  if (v <= 35) return 'Left';
+  if (v <= 47) return 'Center-left';
+  if (v <= 53) return 'Center';
+  if (v <= 65) return 'Center-right';
+  if (v <= 92) return 'Right';
+  return 'Far right';
+}
+
+/* ---------- Step definitions ---------- */
+const steps = [
+  /* ---- About you ---- */
+  { id:'name', name:'Name', section:'About you', q:"What's your full name?", type:'text', required:true },
+  { id:'gender', name:'Gender', section:'About you', q:"What's your gender?", type:'choice', required:true,
+    options:['Female','Male','Nonbinary','Agender'] },
+  { id:'dob', name:'Date of birth', section:'About you', q:"Date of birth", type:'date', required:true },
+  { id:'from', name:'Where from', section:'About you', q:"Where are you from?", sub:"Hometown, or wherever you'd say you're from.", type:'location', required:true },
+  { id:'email', name:'Email', section:'About you', q:"Best email to reach you", type:'email', required:true },
+  { id:'phone', name:'Phone', section:'About you', q:"Phone number", type:'tel', required:false },
+  { id:'ig', name:'Instagram', section:'About you', q:"Instagram handle", type:'text', required:true, placeholder:'@handle',
+    skippable:true, skipLabel:"I'm not on Instagram", requiredMsg:"If you don't have it, check the box above." },
+  { id:'li', name:'LinkedIn', section:'About you', q:"LinkedIn", type:'url', required:true,
+    skippable:true, skipLabel:"I don't have a LinkedIn profile", requiredMsg:"If you don't have it, check the box above." },
+  { id:'fetlife', name:'FetLife', section:'About you', q:"FetLife profile", type:'text', required:true, placeholder:'Profile name or link',
+    skippable:true, skipLabel:"What's that?", requiredMsg:"If you don't have it, check the box above." },
+  { id:'dog_love', name:'Dog love', section:'About you', q:"How much do you love dogs?", type:'slider', required:true,
+    min:0, max:10, step:1, start:5, endLabels:["I have trauma and I'm afraid","I love dogs more than people"],
+    dynamicLabel:v => `${v} / 10` },
+
+  /* ---- About your current home ---- */
+  { id:'current_address', name:'Current address', section:'About your current home', q:"Where do you live today?", type:'address', required:true,
+    fields:[
+      {key:'Street address', placeholder:'Street address', required:true},
+      {key:'City', placeholder:'City', required:true, autocomplete:'city'},
+      {key:'State', placeholder:'State', required:true, datalist:'us-states'},
+      {key:'ZIP', placeholder:'ZIP', required:false, numeric:true, maxLength:5}
+    ] },
+  { id:'time_at_address', name:'Time at current address', section:'About your current home', q:"How long have you been at your current address?", type:'duration', required:true },
+  { id:'living_with', name:'Living with', section:'About your current home', q:"Who do you live with?", type:'choice', required:true,
+    options:['I live alone','1 roommate','2 roommates','3+ roommates'],
+    extraCheckbox:{ label:"I have a pet", key:'Has pet' } },
+
+  { id:'pet_info', name:'Pet info', section:'About your current home', q:"Tell me about your pet", type:'address', required:true,
+    fields:[
+      {key:'Pet species', placeholder:'Species (e.g. dog, cat)', required:true},
+      {key:'Pet age', placeholder:'Age', required:false},
+      {key:'Pet name', placeholder:'Name', required:true}
+    ], visibleIf: a => a['Has pet']==='Yes' },
+
+  { id:'roommate_relationship', name:'Relationship to housemates', section:'About your current home', q:"What's your relationship with them?", type:'choice', required:true,
+    options:['Family (spouse/children)','Close friends','Random housemates'], visibleIf: isRoommate },
+  { id:'roommate_rent_share', name:'Monthly rent (your share)', section:'About your current home', q:"What's your monthly share of the rent?", type:'currency', required:true,
+    visibleIf: isRoommate },
+  { id:'roommate_on_lease', name:'On the lease', section:'About your current home', q:"Are you on the lease?", type:'choice', required:true,
+    options:['Yes','No'], visibleIf: isRoommate },
+  { id:'roommate_lease_end', name:'Lease end date', section:'About your current home', q:"When does the lease end?", sub:"MM/DD/YY", type:'date', required:true,
+    visibleIf: a => isRoommate(a) && a['On the lease']==='Yes' },
+
+  { id:'alone_monthly_cost', name:'Monthly housing cost', section:'About your current home', q:"How much do you pay a month?", type:'currency', required:true,
+    visibleIf: isAlone },
+  { id:'alone_lease_status', name:'Lease status', section:'About your current home', q:"Are you on the lease?", type:'choice', required:true,
+    options:['Yes','No, I own it','No, other'], visibleIf: isAlone },
+  { id:'alone_lease_other_explain', name:'Lease status (other)', section:'About your current home', q:"Can you explain?", type:'text', required:true,
+    visibleIf: a => isAlone(a) && a['Lease status']==='No, other' },
+  { id:'alone_lease_end', name:'Lease end date', section:'About your current home', q:"When does the lease end?", sub:"MM/DD/YY", type:'date', required:true,
+    visibleIf: a => isAlone(a) && a['Lease status']==='Yes' },
+
+  /* ---- This room… ---- */
+  { id:'this_room', name:'This room', section:'This room…', q:"Would this be a full move, or a second home?", type:'choice', required:true,
+    options:['This would be my main or only home','This would be a second home'] },
+
+  { id:'second_budget', name:'Budget for second home', section:'This room…', q:"What's your budget for this additional space?", type:'currency', required:true,
+    visibleIf: isSecondHome },
+  { id:'ideal_movein', name:'Ideal move-in date', section:'This room…', q:"What's your ideal move-in date?", type:'date', required:true,
+    visibleIf: isSecondHome },
+
+  { id:'earliest_moveout', name:'Earliest move-out date', section:'This room…', q:"What's your earliest move-out date?", sub:"When could you leave your current lease or contract?", type:'date', required:true,
+    visibleIf: isMovingFully,
+    prefillFrom: 'Lease end date' },
+  { id:'furniture', name:'Has furniture', section:'This room…', q:"Do you have your own furniture?", type:'choice', required:true,
+    options:['Fully furnished','Some pieces','Would need furnishing'], visibleIf: isMovingFully },
+
+  /* ---- Income ---- */
+  { id:'income_sources', name:'Income sources', section:'Income', q:"What's the source of your income?", type:'income_multichoice', required:true,
+    options:['Salaried job','Self-employed','Freelance','Business owner','Investments','Other'],
+    sub:"Select all that apply — a field will open for each to note the yearly amount.",
+    hint:"Just so you know — if you move forward as a finalist, Charlotte will ask to see documentation confirming this (pay stubs, tax returns, etc.)." },
+  { id:'job_title', name:'Job / field', section:'Income', q:"What do you do for work?", type:'text', required:true, visibleIf: hasWorkIncome },
+  { id:'work_setting', name:'Work setting', section:'Income', q:"Where do you work from?", type:'choice', required:true,
+    options:['Remote','Hybrid','Onsite'], visibleIf: hasWorkIncome },
+  { id:'employer', name:'Employer', section:'Income', q:"What's the name of your company or employer?", type:'text', required:true, visibleIf: hasSalaried },
+  { id:'job_duration', name:'Time at this job', section:'Income', q:"How long have you worked there?", type:'text', required:true, visibleIf: hasSalaried },
+
+  /* ---- Car ---- */
+  { id:'has_car', name:'Has car', section:'Car', q:"Do you have a car?", type:'choice', required:true, options:['Yes','No'] },
+  { id:'car_location', name:'Car location', section:'Car', q:"Where is it currently kept?", sub:"Garage, street parking, off-site lot, outside the city, etc.", type:'text', required:true,
+    visibleIf:a => a['Has car']==='Yes' },
+
+  /* ---- The Personal is Political ---- */
+  { id:'political_lean', name:'Political lean', section:'The Personal is Political', q:"Where would you place yourself politically?", type:'slider', required:false,
+    min:0, max:100, step:1, start:50, endLabels:['Far left','Far right'], dynamicLabel: politicalLabel,
+    invalidate:{ label:"Apolitical / not political", flagKey:'Political - apolitical' } },
+  { id:'voter_registration', name:'Voter registration', section:'The Personal is Political', q:"What does your voter registration say?", type:'choice', required:true,
+    options:['Democrat','Republican','Independent','Not registered'], visibleIf: a => !isApolitical(a) },
+  { id:'voted_for', name:'Last voted for', section:'The Personal is Political', q:"For whom did you last vote?", type:'text', required:false,
+    visibleIf: a => !isApolitical(a) },
+
+  /* ---- A little kink ---- */
+  { id:'kink_bdsm', name:'Into BDSM', section:'Kink', q:"Are you into BDSM?", type:'choice', required:true, options:['Yes','No'] },
+
+  { id:'kink_identify', name:'Kink identity', section:'Kink', q:"How do you identify?", type:'choice', required:true,
+    options:['Submissive','Switch','Dominant'], visibleIf: a => a['Into BDSM']==='Yes' },
+
+  { id:'kink_subtype', name:'Sub type', section:'Kink', q:"What kind of sub are you?", sub:"Check all that apply.", type:'multichoice', required:true, otherInline:true,
+    options:['Servant','ABDL','Sissy','Rope Bottom','Butt-Slut','Maid','Cash Cow','Little','Masochist','Other'],
+    visibleIf: a => a['Into BDSM']==='Yes' && (a['Kink identity']==='Submissive' || a['Kink identity']==='Switch') },
+
+  { id:'kink_submissive_pct', name:'Submissiveness', section:'Kink', q:"How submissive are you?", type:'slider', required:true,
+    min:0, max:100, step:1, start:50, endLabels:['0%','100%'], dynamicLabel: v => `${v}%`,
+    visibleIf: a => a['Into BDSM']==='Yes' && (a['Kink identity']==='Submissive' || a['Kink identity']==='Switch') },
+
+  { id:'kink_play_prefs', name:'Play preferences', section:'Kink', q:"Mark all the things you like.", type:'multichoice', required:true, otherInline:true,
+    options:['Servitude','Bondage','Feminization','Rope Suspension','Age-Play','Watersports','FTT','Humiliation','CBT','Corporal Punishment','Impact','OTK Spanking','Medfed','Sounding','Foot Fetish','Pegging','CNC','Trampling','Smothering','Pet-play','Wrestling','Pain Overall ♡','Other'],
+    visibleIf: a => a['Into BDSM']==='Yes' },
+
+  /* ---- You as housemate 101 ---- */
+  { id:'cleanliness', name:'Cleanliness', section:'You as housemate', q:"How would you describe your cleanliness habits?", type:'choice', required:true,
+    options:['Very tidy','Average','Messy but respectful of shared spaces',"Honestly? I struggle with it"] },
+  { id:'smoking', name:'Smoking', section:'You as housemate', q:"What do you smoke?", type:'multichoice', required:true,
+    options:['Cigarettes','Vapes','Weed','Nothing at all'], exclusiveOption:'Nothing at all' },
+  { id:'lowmaint', name:'Low maintenance', section:'You as housemate', q:"What makes you a low-maintenance housemate?", type:'textarea', required:true },
+  { id:'landlord_ref', name:'Landlord reference', section:'You as housemate', q:"A landlord reference — past, not current", type:'address', required:true,
+    fields:[
+      {key:'Landlord name', placeholder:'Landlord name', required:true, type:'text'},
+      {key:'Landlord phone', placeholder:'Phone number', required:true, type:'tel'},
+      {key:'Landlord email', placeholder:'Email', required:false, type:'email'},
+      {key:'Tenancy start date', placeholder:'', required:true, type:'date', label:'Start date renting from this landlord'},
+      {key:'Tenancy end date', placeholder:'', required:true, type:'date', label:'End date renting from this landlord'}
+    ],
+    footnote:"If your application moves forward, I may also want to contact your current landlord for a reference — no need to give them a heads-up about a possible move at this stage." },
+
+  { id:'roommate_ref', name:'Personal reference', section:'You as housemate', q:"A roommate reference", type:'address', required:true,
+    sub:"Doesn't have to be a current roommate if you'd rather be sure about the move before sharing the news — but I will want to speak with your current roommates before anyone moves in.",
+    fields:[
+      {key:'Personal reference name', placeholder:'Name', required:true, type:'text'},
+      {key:'Personal reference phone', placeholder:'Phone number', required:true, type:'tel'}
+    ], visibleIf: isRoommate },
+
+  { id:'personal_ref', name:'Personal reference', section:'You as housemate', q:"A personal reference", type:'address', required:true,
+    sub:"Best if it's someone you've lived with before — a former roommate is ideal, though not required.",
+    fields:[
+      {key:'Personal reference name', placeholder:'Name', required:true, type:'text'},
+      {key:'Personal reference phone', placeholder:'Phone number', required:true, type:'tel'}
+    ], visibleIf: isAlone },
+
+  { id:'personal_ref_lived_with', name:'Lived with reference', section:'You as housemate', q:"Did you live with them?", type:'choice', required:true,
+    options:['Yes','No, but we\'re super close'], visibleIf: isAlone },
+  { id:'anything', name:'Additional notes', section:'You as housemate', q:"Anything else you'd like me to know for now?", type:'textarea', required:false },
+
+  /* ---- What this includes ---- */
+  { id:'disclosure', name:'Agrees to domestic structure', section:'What this includes', type:'disclosure', required:true },
+];
+
+/* ---------- Engine ---------- */
+const answers = {};
+let current = 0;
+// Fixed total: the longest possible single path through the form (mutually
+// exclusive branches — like roommate vs. alone — only count once, at their
+// larger side). Computed by hand from the step tree; doesn't change at runtime,
+// so the "X / Z" counter never jumps around as branches resolve.
+const MAX_POSSIBLE_STEPS = 45;
+
+const container = document.getElementById('steps-container');
+const doneScreen = document.getElementById('done-screen');
+const backBtn = document.getElementById('back-btn');
+const nextBtn = document.getElementById('next-btn');
+const progressBar = document.getElementById('progress-bar');
+const stepCounter = document.getElementById('step-counter');
+
+function visible(step){ return step.visibleIf ? step.visibleIf(answers) : true; }
+function visibleSteps(){ return steps.filter(visible); }
+
+function buildStepEl(step){
+  const el = document.createElement('div');
+  el.className = 'step';
+  el.dataset.id = step.id;
+
+  if (step.type === 'disclosure') {
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">What this arrangement includes</h1>
+      <div class="info-box">
+        <p>This is a private room in Bushwick, Brooklyn within an occupied multi-room home. It's a domestic living arrangement with other folks who are mostly vanilla civilians, and the home is not a 24/7 kink space — most definitely not CFNM (it's actually where I, Charlotte, take time off from kink and naked subs). The place is, however, upstairs from The Crown, so you'd get a few special perks. The monthly of $2,200 includes:</p>
+        <ul>
+          <li>Your own private room</li>
+          <li>General admission to all events at The Crown</li>
+          <li>Professional cleaning twice a month</li>
+          <li>Utilities and internet included</li>
+          <li>A mini-fridge in your room</li>
+          <li>Access to the shared bathroom</li>
+          <li>Conditional access to Charlotte's outdoor space</li>
+          <li>Optional monthly chat about your kink endeavours</li>
+        </ul>
+        <label class="agree">
+          <input type="checkbox" id="input-disclosure">
+          <span>I understand this is an application to rent an available room in the home of Charlotte Taillor, alongside her current housemates — not a D/s dynamic or relationship with her or anyone else in the household.</span>
+        </label>
+      </div>
+      <p class="hint">If your application moves forward, you'll get a separate, optional questionnaire about household dynamics and community involvement.</p>
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+    return el;
+  }
+
+  const subHtml = step.sub ? `<p class="sub">${step.sub}</p>` : '';
+  const hintHtml = step.hint ? `<p class="hint">${step.hint}</p>` : '';
+
+  const skipHtml = step.skippable ? `
+    <label class="skip-row">
+      <input type="checkbox" id="skip-${step.id}">
+      <span>${step.skipLabel || "Doesn't apply to me"}</span>
+    </label>` : '';
+
+  if (step.type === 'choice') {
+    const opts = step.options.map((opt, i) => `
+      <div class="choice" data-value="${opt.replace(/"/g,'&quot;')}">
+        <span class="key">${i+1}</span><span>${opt}</span>
+      </div>`).join('');
+    const extraCheckHtml = step.extraCheckbox ? `
+      <label class="skip-row">
+        <input type="checkbox" id="extra-${step.id}">
+        <span>${step.extraCheckbox.label}</span>
+      </label>` : '';
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">${step.q}</h1>${subHtml}
+      <div class="choices">${opts}</div>
+      ${extraCheckHtml}
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+  } else if (step.type === 'duration') {
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">${step.q}</h1>${subHtml}
+      <div class="duration-row">
+        <div class="duration-field">
+          <label class="field-label">Years</label>
+          <input type="text" inputmode="numeric" id="input-${step.id}-years" placeholder="0">
+        </div>
+        <div class="duration-field">
+          <label class="field-label">Months</label>
+          <input type="text" inputmode="numeric" id="input-${step.id}-months" placeholder="0" maxlength="2">
+        </div>
+      </div>
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+  } else if (step.type === 'multichoice') {
+    const opts = step.options.map((opt, i) => {
+      const choiceHtml = `
+      <div class="choice mchoice" data-value="${opt.replace(/"/g,'&quot;')}">
+        <span class="key">${i+1}</span><span>${opt}</span>
+      </div>`;
+      if (step.otherInline && opt === 'Other') {
+        return `${choiceHtml}
+      <div class="mc-other-field">
+        <input type="text" class="mc-other-input" placeholder="What else?">
+      </div>`;
+      }
+      return choiceHtml;
+    }).join('');
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">${step.q}</h1>${subHtml}
+      <div class="choices">${opts}</div>
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+  } else if (step.type === 'textarea') {
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">${step.q}</h1>${subHtml}
+      <textarea id="input-${step.id}" placeholder="${step.placeholder||'Type your answer…'}"></textarea>
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+  } else if (step.type === 'location') {
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">${step.q}</h1>${subHtml}
+      <div class="autocomplete-wrap">
+        <input type="text" id="input-${step.id}" placeholder="Start typing a city…" autocomplete="off">
+        <div class="ac-list" id="ac-${step.id}"></div>
+      </div>
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+  } else if (step.type === 'address') {
+    const fieldsHtml = step.fields.map((f, i) => {
+      const labelHtml = f.label ? `<label class="field-label">${f.label}</label>` : '';
+      const listAttr = f.datalist ? ` list="${f.datalist}"` : '';
+      const maxAttr = f.maxLength ? ` maxlength="${f.maxLength}"` : '';
+      const inputModeAttr = f.numeric ? ` inputmode="numeric"` : '';
+      const inputHtml = `<input type="${f.type||'text'}" class="addr-field" id="input-${step.id}-${i}" placeholder="${f.placeholder}" data-key="${f.key}"${listAttr}${maxAttr}${inputModeAttr}>`;
+      if (f.autocomplete === 'city') {
+        return `<div>${labelHtml}<div class="autocomplete-wrap">${inputHtml}<div class="ac-list" id="ac-${step.id}-${i}"></div></div></div>`;
+      }
+      return `<div>${labelHtml}${inputHtml}</div>`;
+    }).join('');
+    const footnoteHtml = step.footnote ? `<p class="hint">${step.footnote}</p>` : '';
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">${step.q}</h1>${subHtml}
+      <div class="addr-grid">${fieldsHtml}</div>
+      ${footnoteHtml}
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+  } else if (step.type === 'currency') {
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">${step.q}</h1>${subHtml}
+      <div class="currency-wrap"><span class="dollar">$</span><input type="text" inputmode="numeric" id="input-${step.id}" placeholder="0"></div>
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+  } else if (step.type === 'slider') {
+    const invalidateHtml = step.invalidate ? `
+      <label class="invalidate-row">
+        <input type="checkbox" id="invalidate-${step.id}">
+        <span>${step.invalidate.label}</span>
+      </label>` : '';
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">${step.q}</h1>${subHtml}
+      <div class="slider-readout" id="readout-${step.id}"></div>
+      <input type="range" id="input-${step.id}" min="${step.min}" max="${step.max}" step="${step.step}" value="${step.start}">
+      <div class="slider-endlabels"><span>${step.endLabels[0]}</span><span>${step.endLabels[1]}</span></div>
+      ${invalidateHtml}
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+  } else if (step.type === 'income_multichoice') {
+    const rows = step.options.map((opt, i) => {
+      const subfields = opt === 'Other'
+        ? `<input type="text" class="income-other-what" placeholder="What is it?">
+           <div class="currency-wrap small"><span class="dollar">$</span><input type="text" inputmode="numeric" class="income-amount" placeholder="Yearly income"></div>`
+        : `<div class="currency-wrap small"><span class="dollar">$</span><input type="text" inputmode="numeric" class="income-amount" placeholder="Yearly income"></div>`;
+      return `
+        <div class="income-row" data-value="${opt}">
+          <div class="choice mchoice income-toggle" data-value="${opt}">
+            <span class="key">${i+1}</span><span>${opt}</span>
+          </div>
+          <div class="income-subfields">${subfields}</div>
+        </div>`;
+    }).join('');
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">${step.q}</h1>${subHtml}
+      <div class="income-list">${rows}</div>
+      ${hintHtml}
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+  } else {
+    el.innerHTML = `
+      <p class="eyebrow">${step.section}</p>
+      <h1 class="q">${step.q}</h1>${subHtml}
+      <input type="${step.type}" id="input-${step.id}" placeholder="${step.placeholder||''}">
+      ${skipHtml}
+      <p class="errmsg" id="err-${step.id}"></p>
+    `;
+  }
+  return el;
+}
+
+/* Reusable place autocomplete (Photon/komoot) wired onto any input+list pair */
+function wirePlaceAutocomplete(input, list, mode){
+  if (!input || !list) return;
+  let debounceTimer;
+
+  function formatFull(f){
+    const p = f.properties || {};
+    const parts = [p.name, p.city && p.city !== p.name ? p.city : null, p.state, p.country].filter(Boolean);
+    return [...new Set(parts)].join(', ');
+  }
+  function formatCityOnly(f){
+    const p = f.properties || {};
+    return p.city || p.name || '';
+  }
+  async function search(q){
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=7&layer=city&layer=locality&layer=district`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('bad response');
+    const data = await res.json();
+    const formatter = mode === 'city' ? formatCityOnly : formatFull;
+    return [...new Set((data.features || []).map(formatter).filter(Boolean))];
+  }
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const q = input.value.trim();
+    if (q.length < 2) { list.classList.remove('show'); list.innerHTML=''; return; }
+    debounceTimer = setTimeout(async () => {
+      try {
+        let results = await search(q);
+        if (!results.length) {
+          list.innerHTML = `<div class="ac-item" style="cursor:default;opacity:.6;">No matches — keep typing or just leave what you've got</div>`;
+          list.classList.add('show');
+          return;
+        }
+        list.innerHTML = results.map(name => `<div class="ac-item" data-value="${name.replace(/"/g,'&quot;')}">${name}</div>`).join('');
+        list.classList.add('show');
+      } catch (e) {
+        list.innerHTML = `<div class="ac-item" style="cursor:default;opacity:.6;">Search's down — just type it in</div>`;
+        list.classList.add('show');
+      }
+    }, 350);
+  });
+  list.addEventListener('click', (e) => {
+    const item = e.target.closest('.ac-item');
+    if (!item || !item.dataset.value) return;
+    input.value = item.dataset.value;
+    list.classList.remove('show');
+    list.innerHTML = '';
+  });
+  document.addEventListener('click', (e) => {
+    if (e.target !== input && !list.contains(e.target)) list.classList.remove('show');
+  });
+}
+
+/* Recompute a multichoice step's stored answer, folding the inline "Other" text in as "Other (text)" */
+function updateMultichoiceAnswer(step, stepEl){
+  const selected = Array.from(stepEl.querySelectorAll('.mchoice.selected')).map(c => {
+    if (step.otherInline && c.dataset.value === 'Other') {
+      const otherInput = stepEl.querySelector('.mc-other-input');
+      const txt = otherInput ? otherInput.value.trim() : '';
+      return txt ? `Other (${txt})` : 'Other';
+    }
+    return c.dataset.value;
+  });
+  answers[step.name] = selected.join(', ');
+}
+
+/* Duration fields: digits only, months clamped to 0-11 */
+function wireDurationField(step){
+  const yearsInput = document.getElementById(`input-${step.id}-years`);
+  const monthsInput = document.getElementById(`input-${step.id}-months`);
+  if (yearsInput) yearsInput.addEventListener('input', () => { yearsInput.value = yearsInput.value.replace(/[^\d]/g, ''); });
+  if (monthsInput) monthsInput.addEventListener('input', () => {
+    let v = monthsInput.value.replace(/[^\d]/g, '');
+    if (v && Number(v) > 11) v = '11';
+    monthsInput.value = v;
+  });
+}
+function wireLocationField(step){
+  wirePlaceAutocomplete(document.getElementById(`input-${step.id}`), document.getElementById(`ac-${step.id}`), 'full');
+}
+
+/* Address-type extra field behaviors: city autocomplete, numeric ZIP, state datalist */
+function wireAddressExtras(step){
+  step.fields.forEach((f, i) => {
+    const input = document.getElementById(`input-${step.id}-${i}`);
+    if (!input) return;
+    if (f.autocomplete === 'city') {
+      wirePlaceAutocomplete(input, document.getElementById(`ac-${step.id}-${i}`), 'city');
+    }
+    if (f.numeric) {
+      input.addEventListener('input', () => {
+        let digits = input.value.replace(/[^\d]/g, '');
+        if (f.maxLength) digits = digits.slice(0, f.maxLength);
+        input.value = digits;
+      });
+    }
+  });
+}
+
+/* Slider wiring: live readout + optional invalidate checkbox */
+function wireSliderField(step){
+  const input = document.getElementById(`input-${step.id}`);
+  const readout = document.getElementById(`readout-${step.id}`);
+  if (!input || !readout) return;
+  const update = () => { readout.textContent = step.dynamicLabel ? step.dynamicLabel(input.value) : input.value; };
+  update();
+  input.addEventListener('input', update);
+
+  if (step.invalidate) {
+    const cb = document.getElementById(`invalidate-${step.id}`);
+    if (cb) {
+      cb.addEventListener('change', () => {
+        input.disabled = cb.checked;
+        readout.style.opacity = cb.checked ? '0.35' : '1';
+      });
+    }
+  }
+}
+
+/* Income multichoice wiring */
+function wireIncomeField(step){
+  const stepEl = container.querySelector(`[data-id="${step.id}"]`);
+  if (!stepEl) return;
+  stepEl.querySelectorAll('.income-toggle').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      toggle.classList.toggle('selected');
+      const row = toggle.closest('.income-row');
+      const sub = row.querySelector('.income-subfields');
+      sub.classList.toggle('show', toggle.classList.contains('selected'));
+    });
+  });
+}
+
+// Build all step elements once
+steps.forEach(step => container.appendChild(buildStepEl(step)));
+steps.filter(s => s.type === 'location').forEach(wireLocationField);
+steps.filter(s => s.type === 'address').forEach(wireAddressExtras);
+steps.filter(s => s.type === 'duration').forEach(wireDurationField);
+steps.filter(s => s.otherInline).forEach(step => {
+  const stepEl = container.querySelector(`[data-id="${step.id}"]`);
+  const otherInput = stepEl ? stepEl.querySelector('.mc-other-input') : null;
+  if (otherInput) otherInput.addEventListener('input', () => updateMultichoiceAnswer(step, stepEl));
+});
+steps.filter(s => s.type === 'slider').forEach(wireSliderField);
+steps.filter(s => s.type === 'income_multichoice').forEach(wireIncomeField);
+
+// live thousands-separator formatting for every money field
+function formatCurrencyLive(input){
+  input.addEventListener('input', () => {
+    const caretAtEnd = input.selectionEnd === input.value.length;
+    let digits = input.value.replace(/[^\d]/g, '');
+    if (!digits) { input.value = ''; return; }
+    input.value = Number(digits).toLocaleString('en-US');
+    if (caretAtEnd) input.setSelectionRange(input.value.length, input.value.length);
+  });
+}
+document.querySelectorAll('.currency-wrap input').forEach(formatCurrencyLive);
+
+// skip-checkbox behavior for profile fields
+steps.filter(s => s.skippable).forEach(step => {
+  const cb = document.getElementById(`skip-${step.id}`);
+  const input = document.getElementById(`input-${step.id}`);
+  if (!cb || !input) return;
+  cb.addEventListener('change', () => {
+    input.disabled = cb.checked;
+    if (cb.checked) input.value = '';
+  });
+});
+
+function render(){
+  const vs = visibleSteps();
+  const step = steps[current];
+
+  steps.forEach(s => {
+    const el = container.querySelector(`[data-id="${s.id}"]`);
+    el.classList.toggle('active', s.id === step.id);
+  });
+  doneScreen.classList.remove('active');
+  container.style.display = 'block';
+  document.getElementById('nav-bar').style.display = 'flex';
+
+  const idx = vs.indexOf(step);
+  const zShown = Math.max(MAX_POSSIBLE_STEPS, idx + 1); // safety clamp in the unlikely case a path exceeds our estimate
+  progressBar.style.width = `${Math.round(((idx+1)/zShown)*100)}%`;
+  stepCounter.textContent = `${idx+1} / ${zShown}`;
+
+  backBtn.disabled = (idx === 0);
+  nextBtn.textContent = (idx === vs.length-1) ? 'Submit application' : 'Continue →';
+
+  if (step.type === 'choice') {
+    const chosen = answers[step.name];
+    const stepEl = container.querySelector(`[data-id="${step.id}"]`);
+    stepEl.querySelectorAll('.choice').forEach(c => c.classList.toggle('selected', c.dataset.value === chosen));
+    if (step.extraCheckbox) {
+      const cb = document.getElementById(`extra-${step.id}`);
+      if (cb) cb.checked = answers[step.extraCheckbox.key] === 'Yes';
+    }
+  }
+  if (step.type === 'duration') {
+    const yearsInput = document.getElementById(`input-${step.id}-years`);
+    const monthsInput = document.getElementById(`input-${step.id}-months`);
+    if (yearsInput && answers[`${step.name} (years)`] !== undefined) yearsInput.value = answers[`${step.name} (years)`];
+    if (monthsInput && answers[`${step.name} (months)`] !== undefined) monthsInput.value = answers[`${step.name} (months)`];
+    if (yearsInput) setTimeout(()=>yearsInput.focus(), 300);
+  }
+  if (step.type === 'multichoice') {
+    const chosen = (answers[step.name] || '').split(', ').filter(Boolean);
+    const stepEl = container.querySelector(`[data-id="${step.id}"]`);
+    stepEl.querySelectorAll('.mchoice').forEach(c => {
+      const isOtherChoice = step.otherInline && c.dataset.value === 'Other';
+      const match = isOtherChoice
+        ? chosen.some(v => v === 'Other' || v.startsWith('Other ('))
+        : chosen.includes(c.dataset.value);
+      c.classList.toggle('selected', match);
+    });
+    if (step.otherInline) {
+      const otherEntry = chosen.find(v => v.startsWith('Other'));
+      const otherField = stepEl.querySelector('.mc-other-field');
+      const otherInput = stepEl.querySelector('.mc-other-input');
+      if (otherField) otherField.classList.toggle('show', !!otherEntry);
+      if (otherInput) {
+        const m = otherEntry ? otherEntry.match(/^Other \((.*)\)$/) : null;
+        otherInput.value = m ? m[1] : '';
+      }
+    }
+  }
+  if (step.type === 'address') {
+    step.fields.forEach((f, i) => {
+      const input = document.getElementById(`input-${step.id}-${i}`);
+      if (input && answers[f.key]) input.value = answers[f.key];
+    });
+    const first = document.getElementById(`input-${step.id}-0`);
+    if (first) setTimeout(()=>first.focus(), 300);
+  }
+  if (step.type === 'currency') {
+    const input = document.getElementById(`input-${step.id}`);
+    if (input && answers[step.name]) input.value = answers[step.name].replace(/^\$/, '');
+    if (input) setTimeout(()=>input.focus(), 300);
+  }
+  if (step.type === 'slider') {
+    // prefill previously chosen value if returning to this step
+    const input = document.getElementById(`input-${step.id}`);
+    const readout = document.getElementById(`readout-${step.id}`);
+    if (step.invalidate) {
+      const cb = document.getElementById(`invalidate-${step.id}`);
+      const wasInvalid = answers[step.invalidate.flagKey] === 'Yes';
+      if (cb) cb.checked = wasInvalid;
+      if (input) input.disabled = wasInvalid;
+      if (readout) readout.style.opacity = wasInvalid ? '0.35' : '1';
+    }
+    if (input && readout) readout.textContent = step.dynamicLabel ? step.dynamicLabel(input.value) : input.value;
+  }
+  if (['text','email','tel','date','url','textarea','location'].includes(step.type)) {
+    const input = document.getElementById(`input-${step.id}`);
+    if (step.type === 'date' && step.prefillFrom && !answers[step.name] && answers[step.prefillFrom] && input && !input.value) {
+      input.value = answers[step.prefillFrom];
+    }
+    if (input && answers[step.name] && answers[step.name] !== step.skipLabel) input.value = answers[step.name];
+    if (input) setTimeout(()=>input.focus(), 300);
+  }
+  if (step.skippable) {
+    const cb = document.getElementById(`skip-${step.id}`);
+    const input = document.getElementById(`input-${step.id}`);
+    if (cb && input) {
+      const wasSkipped = answers[step.name] === step.skipLabel;
+      cb.checked = wasSkipped;
+      input.disabled = wasSkipped;
+    }
+  }
+  if (step.type === 'disclosure') {
+    const cb = document.getElementById('input-disclosure');
+    if (cb) cb.checked = answers['Understands not a D/s dynamic'] === 'Yes';
+  }
+
+  document.getElementById(`err-${step.id}`).textContent = '';
+}
+
+function readCurrentValue(step){
+  if (step.type === 'choice' || step.type === 'multichoice') return answers[step.name] || '';
+  if (step.skippable) {
+    const skipCb = document.getElementById(`skip-${step.id}`);
+    if (skipCb && skipCb.checked) return step.skipLabel;
+  }
+  const input = document.getElementById(`input-${step.id}`);
+  return input ? input.value.trim() : '';
+}
+
+function requiredError(step){
+  return step.requiredMsg || (step.type === 'disclosure' ? 'Please check the box to continue.' : "This one's required.");
+}
+
+function validateAndStore(step){
+  if (step.type === 'duration') {
+    const yearsInput = document.getElementById(`input-${step.id}-years`);
+    const monthsInput = document.getElementById(`input-${step.id}-months`);
+    const years = yearsInput ? yearsInput.value.trim() : '';
+    const months = monthsInput ? monthsInput.value.trim() : '';
+    if (step.required && !years && !months) {
+      document.getElementById(`err-${step.id}`).textContent = 'Enter years and/or months.';
+      return false;
+    }
+    answers[`${step.name} (years)`] = years || '0';
+    answers[`${step.name} (months)`] = months || '0';
+    return true;
+  }
+
+  if (step.type === 'address') {
+    let ok = true;
+    step.fields.forEach((f, i) => {
+      const input = document.getElementById(`input-${step.id}-${i}`);
+      const v = input ? input.value.trim() : '';
+      if (f.required && !v) ok = false;
+      answers[f.key] = v;
+    });
+    if (!ok) { document.getElementById(`err-${step.id}`).textContent = requiredError(step); return false; }
+    return true;
+  }
+
+  if (step.type === 'currency') {
+    const input = document.getElementById(`input-${step.id}`);
+    const v = input ? input.value.trim() : '';
+    if (step.required && !v) { document.getElementById(`err-${step.id}`).textContent = requiredError(step); return false; }
+    answers[step.name] = v ? ('$' + v) : '';
+    return true;
+  }
+
+  if (step.type === 'slider') {
+    const input = document.getElementById(`input-${step.id}`);
+    if (step.invalidate) {
+      const cb = document.getElementById(`invalidate-${step.id}`);
+      if (cb && cb.checked) {
+        answers[step.invalidate.flagKey] = 'Yes';
+        answers[step.name] = step.invalidate.label;
+        return true;
+      }
+      answers[step.invalidate.flagKey] = 'No';
+    }
+    answers[step.name] = step.dynamicLabel ? `${step.dynamicLabel(input.value)} (${input.value})` : input.value;
+    return true;
+  }
+
+  if (step.type === 'income_multichoice') {
+    const stepEl = container.querySelector(`[data-id="${step.id}"]`);
+    const selectedRows = Array.from(stepEl.querySelectorAll('.income-row')).filter(r => r.querySelector('.income-toggle').classList.contains('selected'));
+    if (step.required && selectedRows.length === 0) {
+      document.getElementById(`err-${step.id}`).textContent = 'Pick at least one source.';
+      return false;
+    }
+    let ok = true;
+    const sourceLabels = [];
+    selectedRows.forEach(row => {
+      const val = row.dataset.value;
+      const amountInput = row.querySelector('.income-amount');
+      const amount = amountInput ? amountInput.value.trim() : '';
+      if (!amount) ok = false;
+      if (val === 'Other') {
+        const whatInput = row.querySelector('.income-other-what');
+        const what = whatInput ? whatInput.value.trim() : '';
+        if (!what) ok = false;
+        answers['Income - Other (what)'] = what;
+        answers['Income - Other (amount)'] = amount ? ('$' + amount) : '';
+        sourceLabels.push(what ? `Other (${what})` : 'Other');
+      } else {
+        answers[`Income - ${val}`] = amount ? ('$' + amount) : '';
+        sourceLabels.push(val);
+      }
+    });
+    if (!ok) {
+      document.getElementById(`err-${step.id}`).textContent = 'Fill in the amount for each source you selected.';
+      return false;
+    }
+    answers[step.name] = sourceLabels.join(', ');
+    return true;
+  }
+
+  if (step.type === 'disclosure') {
+    const cb = document.getElementById('input-disclosure');
+    if (!cb?.checked) {
+      document.getElementById(`err-${step.id}`).textContent = requiredError(step);
+      return false;
+    }
+    answers['Understands not a D/s dynamic'] = 'Yes';
+    return true;
+  }
+
+  const val = readCurrentValue(step);
+  if (step.required && !val) {
+    document.getElementById(`err-${step.id}`).textContent = requiredError(step);
+    return false;
+  }
+  answers[step.name] = val;
+  if (step.extraCheckbox) {
+    const cb = document.getElementById(`extra-${step.id}`);
+    answers[step.extraCheckbox.key] = (cb && cb.checked) ? 'Yes' : 'No';
+  }
+  return true;
+}
+
+function goNext(){
+  const step = steps[current];
+  if (!validateAndStore(step)) return;
+
+  const vs = visibleSteps();
+  const idx = vs.indexOf(step);
+  if (idx === vs.length - 1) { submitForm(); return; }
+  let i = current + 1;
+  while (i < steps.length && !visible(steps[i])) i++;
+  current = i;
+  render();
+}
+
+function goBack(){
+  let i = current - 1;
+  while (i >= 0 && !visible(steps[i])) i--;
+  if (i >= 0) { current = i; render(); }
+}
+
+// click choice / mchoice / income-toggle handled per-type
+container.addEventListener('click', (e) => {
+  const choice = e.target.closest('.choice');
+  if (!choice || choice.classList.contains('income-toggle')) return;
+  const stepEl = choice.closest('.step');
+  const stepId = stepEl.dataset.id;
+  const step = steps.find(s => s.id === stepId);
+
+  if (choice.classList.contains('mchoice')) {
+    choice.classList.toggle('selected');
+    if (step.exclusiveOption) {
+      if (choice.dataset.value === step.exclusiveOption) {
+        stepEl.querySelectorAll('.mchoice').forEach(c => { if (c !== choice) c.classList.remove('selected'); });
+      } else if (choice.classList.contains('selected')) {
+        stepEl.querySelectorAll('.mchoice').forEach(c => { if (c.dataset.value === step.exclusiveOption) c.classList.remove('selected'); });
+      }
+    }
+    if (step.otherInline && choice.dataset.value === 'Other') {
+      const otherField = stepEl.querySelector('.mc-other-field');
+      if (otherField) otherField.classList.toggle('show', choice.classList.contains('selected'));
+    }
+    updateMultichoiceAnswer(step, stepEl);
+    return;
+  }
+
+  if (choice.classList.contains('uchoice')) {
+    stepEl.querySelectorAll('.uchoice').forEach(c => c.classList.toggle('selected', c === choice));
+    return; // no auto-advance; combined with the number field at validation time
+  }
+
+  answers[step.name] = choice.dataset.value;
+  stepEl.querySelectorAll('.choice').forEach(c => c.classList.toggle('selected', c === choice));
+  if (!step.extraCheckbox) setTimeout(goNext, 180); // steps with an extra checkbox need an explicit Continue tap
+});
+
+container.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && !e.target.classList.contains('addr-field') && e.target.type !== 'range') {
+    e.preventDefault();
+    goNext();
+  } else if (e.key === 'Enter' && e.target.tagName === 'TEXTAREA' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    goNext();
+  }
+});
+
+nextBtn.addEventListener('click', goNext);
+backBtn.addEventListener('click', goBack);
+
+/* ---------- Submission ---------- */
+const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxKFSPYYS5ahF4JysXQUiHobClWUwSWpg3RxsVH3vDECysv9tR98TorhXfdSnXHe3rS/exec";
+
+async function submitForm(){
+  nextBtn.disabled = true;
+  nextBtn.textContent = 'Submitting…';
+
+  const payload = { ...answers, 'Submitted at': new Date().toISOString() };
+
+  if (ENDPOINT_URL.includes('PASTE_YOUR')) {
+    finishScreen("Form isn't connected to a sheet yet — add your Apps Script URL.");
+    return;
+  }
+
+  try {
+    await fetch(ENDPOINT_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    finishScreen();
+  } catch (err) {
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'Submit application';
+    document.getElementById(`err-${steps[current].id}`).textContent = 'Something went wrong — try again.';
+  }
+}
+
+function finishScreen(customMsg){
+  container.style.display = 'none';
+  document.getElementById('nav-bar').style.display = 'none';
+  progressBar.style.width = '100%';
+  doneScreen.classList.add('active');
+  if (customMsg) doneScreen.querySelector('p:last-child').textContent = customMsg;
+}
+
+/* init */
+render();
+</script>
+
+</body>
+</html>
